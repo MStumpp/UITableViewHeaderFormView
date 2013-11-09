@@ -20,15 +20,6 @@
 
 @implementation UITableViewHeaderFormView
 
-- (id)initWithFrame:(CGRect)frame
-{
-    self = [super initWithFrame:frame];
-    if (self) {
-        // Initialization code
-    }
-    return self;
-}
-
 - (id)initWithRootView:(UIView *)rootView headerView:(UIView*)headerView delegate:(id<UITableViewHeaderFormViewDelegate>)delegate
 {
     if (!rootView)
@@ -110,15 +101,27 @@
         CGPoint toValue2 = CGPointMake(self._rootView.layer.position.x, self._rootView.layer.position.y+self._headerView.layer.bounds.size.height/2);
         CGRect toValue3 = CGRectMake(self._rootView.layer.bounds.origin.x, self._rootView.layer.bounds.origin.y, self._rootView.layer.bounds.size.width, self._rootView.layer.bounds.size.height-self._headerView.layer.bounds.size.height);
 
-        if (animated) {                        
-            [CATransaction begin]; {
+        if (animated) {
+            
+            //NSLog(@"log 1");
+            
+            __block BOOL done = NO;
+            [CATransaction begin];
                 [CATransaction setCompletionBlock:^{
+                    //NSLog(@"log 2");
+
                     if ([self._delegate respondsToSelector:@selector(tableViewHeaderFormViewDidShow:)])
                         [self._delegate tableViewHeaderFormViewDidShow:self];
                     
-                    if (callback) {
+                    //NSLog(@"log 3");
+
+                    if (callback)
                         callback(TRUE);
-                    }
+                    
+                    //NSLog(@"log 4");
+                    
+                    done = YES;
+                    return;
                 }];
 
                 CABasicAnimation *animation1 = [CABasicAnimation animationWithKeyPath:@"position"];
@@ -157,12 +160,22 @@
                 if ([self._delegate respondsToSelector:@selector(tableViewHeaderFormViewWillShow:)])
                     [self._delegate tableViewHeaderFormViewWillShow:self];
 
+                //NSLog(@"log 5");
+                
                 [self._headerView.layer addAnimation:animation1 forKey:@"animatePosition"];
                 [self._rootView.layer addAnimation:animation2 forKey:@"animatePosition2"];
                 [self._rootView.layer addAnimation:animation3 forKey:@"animateBounds"];
                 
-            } [CATransaction commit];
-    
+                //NSLog(@"log 6");
+                
+            [CATransaction commit];
+
+            if (!callback) {
+                while (done == NO)
+                    [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+                return;
+            }
+
         } else {
             [self._headerView.layer setPosition:toValue1];
             [self._rootView.layer setPosition:toValue2];
@@ -170,11 +183,13 @@
             
             if (callback)
                 callback(TRUE);
+            return;
         }
         
     } else {
         if (callback)
             callback(TRUE);
+        return;
     }
 }
 
@@ -194,15 +209,26 @@
         CGPoint toValue2 = CGPointMake(self._rootView.layer.position.x, self._rootView.layer.position.y-self._headerView.layer.bounds.size.height/2);
         CGRect toValue3 = CGRectMake(self._rootView.layer.bounds.origin.x, self._rootView.layer.bounds.origin.y, self._rootView.layer.bounds.size.width, self._rootView.layer.bounds.size.height+self._headerView.layer.bounds.size.height);
         
-        if (animated) {            
-            [CATransaction begin]; {
+        if (animated) {
+            __block BOOL done = NO;
+            [CATransaction begin];
                 [CATransaction setCompletionBlock:^{
                     if ([self._delegate respondsToSelector:@selector(tableViewHeaderFormViewDidHide:)])
                         [self._delegate tableViewHeaderFormViewDidHide:self];
                     
-                    if (callback) {
+                    /*if (callback) {
                         callback(TRUE);
-                    }
+                        return;
+
+                    } else {
+                        done = YES;
+                    }*/
+                    
+                    if (callback)
+                        callback(TRUE);
+                    
+                    done = YES;
+                    return;
                 }];
                 
                 CABasicAnimation *animation1 = [CABasicAnimation animationWithKeyPath:@"position"];
@@ -244,7 +270,17 @@
                 [self._rootView.layer addAnimation:animation2 forKey:@"animatePosition2"];
                 [self._rootView.layer addAnimation:animation3 forKey:@"animateBounds"];
         
-            } [CATransaction commit];
+            [CATransaction commit];
+
+            /*while (done == NO)
+                [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+            return;*/
+            
+            if (!callback) {
+                while (done == NO)
+                    [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+                return;
+            }
             
         } else {
             [self._headerView.layer setPosition:toValue1];
@@ -253,42 +289,19 @@
             
             if (callback)
                 callback(TRUE);
+            return;
         }
         
     } else {
         if (callback)
             callback(TRUE);
+        return;
     }
 }
 
-/*- (void)animationDidStop:(CAAnimation *)theAnimation finished:(BOOL)flag
-{
-    if (flag) {
-        if (theAnimation == self.downAnimation1) {
-            if ([self._delegate respondsToSelector:@selector(tableViewHeaderFormViewDidShow:)])
-                [self._delegate tableViewHeaderFormViewDidShow:self];
-        } else {
-            if ([self._delegate respondsToSelector:@selector(tableViewHeaderFormViewDidHide:)])
-                [self._delegate tableViewHeaderFormViewDidHide:self];
-        }
-        
-        if (self.callback) {
-            self.callback(TRUE);
-            self.callback = nil;
-        }
-        
-    } else {
-        if (self.callback) {
-            self.callback(FALSE);
-            self.callback = nil;
-        }
-    }
-}*/
-
 - (BOOL)isHeaderShown
 {
-    if (self._headerView && self._headerView.frame.origin.y == 0.0)
-        return TRUE;
+    if (self._headerView && self._headerView.frame.origin.y == 0.0) return TRUE;
     return FALSE;
 }
 
